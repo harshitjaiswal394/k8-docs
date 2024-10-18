@@ -127,3 +127,82 @@ Containerd has become the go-to runtime for Kubernetes deployments, and tools li
 ---
 
 > **Pro Tip**: If you're transitioning from Docker to Kubernetes, learning `nerdctl` is a great way to continue using familiar Docker commands while taking advantage of the newer Containerd features.
+
+
+## Installation and Configuration Commands
+
+### 1. Installing Containerd on a Linux System:
+
+```bash
+# Install required packages
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+# Add Docker's official GPG key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+# Add Docker's official repository
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Install Containerd
+sudo apt-get update
+sudo apt-get install -y containerd
+
+# Configure Containerd
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+
+# Restart Containerd
+sudo systemctl restart containerd
+```
+
+### 2. Installing Nerdctl for a Docker-like CLI Experience:
+
+```bash
+# Download Nerdctl
+curl -LO https://github.com/containerd/nerdctl/releases/download/v0.11.1/nerdctl-0.11.1-linux-amd64.tar.gz
+
+# Extract Nerdctl
+tar zxvf nerdctl-0.11.1-linux-amd64.tar.gz
+
+# Move the Nerdctl binary to /usr/local/bin
+sudo mv nerdctl /usr/local/bin/
+
+# Verify installation
+nerdctl version
+```
+
+### 3. Installing CRI Control (crictl) for Debugging:
+
+```bash
+# Download crictl
+VERSION="v1.24.0"
+curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
+
+# Extract crictl
+sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+
+# Verify installation
+crictl version
+```
+
+### 4. Configuring CRI-O as a Container Runtime for Kubernetes:
+
+```bash
+# Add the CRI-O repository
+OS="xUbuntu_20.04"
+VERSION="1.22"
+echo "deb [signed-by=/usr/share/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+
+# Install CRI-O
+sudo apt-get update
+sudo apt-get install -y cri-o cri-o-runc
+
+# Enable and start CRI-O
+sudo systemctl enable crio --now
+
+# Verify CRI-O installation
+sudo crictl info
+```
+
+These are the common commands for installing and configuring Containerd, Nerdctl, CRI Control, and CRI-O. Ensure that you follow the exact steps for your specific system configuration and Kubernetes version.
