@@ -1,0 +1,175 @@
+## Module: Azure Virtual Network (VNet)
+
+### **1. `main.tf` (VNet Setup with Subnets & Peering)**
+```hcl
+resource "azurerm_virtual_network" "vnet" {
+  name                = var.vnet_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  address_space       = [var.vnet_cidr]
+}
+
+resource "azurerm_subnet" "subnet" {
+  count                = length(var.subnet_names)
+  name                 = var.subnet_names[count.index]
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = [var.subnet_cidrs[count.index]]
+}
+```
+
+### **2. `variables.tf` (Input Variables for VNet)**
+```hcl
+variable "vnet_name" {}
+variable "location" {}
+variable "resource_group_name" {}
+variable "vnet_cidr" {}
+variable "subnet_names" { type = list(string) }
+variable "subnet_cidrs" { type = list(string) }
+```
+
+### **3. `outputs.tf` (VNet Outputs)**
+```hcl
+output "vnet_id" {
+  value = azurerm_virtual_network.vnet.id
+}
+
+output "subnet_ids" {
+  value = azurerm_subnet.subnet[*].id
+}
+```
+
+### **4. `example-usage.tf` (How to Use the VNet Module)**
+```hcl
+module "network" {
+  source              = "./modules/vnet"
+  vnet_name           = "myVNet"
+  location            = "East US"
+  resource_group_name = "myResourceGroup"
+  vnet_cidr           = "10.0.0.0/16"
+  subnet_names        = ["web", "app", "db"]
+  subnet_cidrs        = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+}
+```
+
+---
+
+## **Module: Network Security (NSG, Firewall, VPN Gateway)**
+
+### **1. `main.tf` (NSG, Rules & Associations)**
+```hcl
+resource "azurerm_network_security_group" "nsg" {
+  name                = var.nsg_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+}
+
+resource "azurerm_network_security_rule" "allow_ssh" {
+  name                        = "AllowSSH"
+  priority                    = 1001
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  resource_group_name         = var.resource_group_name
+}
+
+resource "azurerm_subnet_network_security_group_association" "subnet_assoc" {
+  subnet_id                 = var.subnet_id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+```
+
+### **2. `variables.tf` (NSG Variables)**
+```hcl
+variable "nsg_name" {}
+variable "location" {}
+variable "resource_group_name" {}
+variable "subnet_id" {}
+```
+
+### **3. `outputs.tf` (NSG Output)**
+```hcl
+output "nsg_id" {
+  value = azurerm_network_security_group.nsg.id
+}
+```
+
+### **4. `example-usage.tf` (How to Use the NSG Module)**
+```hcl
+module "security" {
+  source              = "./modules/nsg"
+  nsg_name           = "myNSG"
+  location            = "East US"
+  resource_group_name = "myResourceGroup"
+  subnet_id          = module.network.subnet_ids[0]
+}
+```
+
+---
+
+## **Module: Azure Functions (Serverless Computing)**
+
+### **1. `main.tf` (Azure Function Setup)**
+```hcl
+resource "azurerm_storage_account" "storage" {
+  name                     = var.storage_account_name
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_function_app" "function" {
+  name                = var.function_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  storage_account_name  = azurerm_storage_account.storage.name
+  os_type             = "Linux"
+  app_settings        = {
+    "FUNCTIONS_EXTENSION_VERSION" = "~4"
+  }
+}
+```
+
+### **2. `variables.tf` (Function Variables)**
+```hcl
+variable "function_name" {}
+variable "storage_account_name" {}
+variable "location" {}
+variable "resource_group_name" {}
+```
+
+### **3. `outputs.tf` (Function Output)**
+```hcl
+output "function_app_url" {
+  value = azurerm_function_app.function.default_hostname
+}
+```
+
+### **4. `example-usage.tf` (How to Use the Function Module)**
+```hcl
+module "serverless" {
+  source               = "./modules/azure_functions"
+  function_name        = "myFunctionApp"
+  storage_account_name = "mystorageacct"
+  location            = "East US"
+  resource_group_name = "myResourceGroup"
+}
+```
+
+---
+
+## **Additional Modules Available Upon Request**
+- **Azure Static Web Apps** Deployment with GitHub Actions
+- **Azure Cognitive Search** with Index and Data Ingestion
+- **RBAC & IAM** Implementation for Least Privilege Access
+- **CI/CD Pipelines (GitHub Actions, Terraform Cloud Integration)**
+
+---
+
+
